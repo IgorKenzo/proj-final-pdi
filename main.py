@@ -1,8 +1,12 @@
+from funcs import simple_blur
 import tkinter as tk
 from tkinter import filedialog, image_names
 from tkinter.constants import BOTTOM, LEFT, NW, RIGHT
+from tkinter.simpledialog import askinteger
+
 from PIL import ImageTk,Image
 from skimage import data, feature, filters
+import numpy as np
 
 class Application(tk.Frame):
     
@@ -12,13 +16,17 @@ class Application(tk.Frame):
         self.pack()
         self.create_widgets()        
 
+    def desenhar_imagemRGB(self, imagem):
+        print(imagem.shape)
+        self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
+        self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
     def create_widgets(self):
         self.canvas = tk.Canvas(self, width = 800, height = 800)      
         self.canvas.pack(side=BOTTOM)
 
         camera = data.camera()
         self.img = ImageTk.PhotoImage(image=Image.fromarray(camera))
-
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
         self.hi_there = tk.Button(self)
@@ -33,13 +41,13 @@ class Application(tk.Frame):
         self.hi_there2.pack(side=LEFT, padx=10, pady=5)
         
         self.hi_there3 = tk.Button(self)
-        self.hi_there3["text"] = "3Hello World\n(click me)"
-        self.hi_there3["command"] = self.say_hi
+        self.hi_there3["text"] = "Blur Simples"
+        self.hi_there3["command"] = self.call_simple_blur
         self.hi_there3.pack(side=LEFT, padx=10, pady=5)
 
         self.hi_there4 = tk.Button(self)
         self.hi_there4["text"] = "4Hello World\n(click me)"
-        self.hi_there4["command"] = self.say_hi
+        self.hi_there4["command"] = self.teste
         self.hi_there4.pack(side=LEFT, padx=10, pady=5)
 
         self.quit = tk.Button(self, text="QUIT", fg="red", command=self.master.destroy)
@@ -62,6 +70,20 @@ class Application(tk.Frame):
         if not (directory.endswith('.png') or directory.endswith('.jpg') or directory.endswith('.webp')):
             directory += '.png'
         imgpil.save(directory, format="png")
+
+    def call_simple_blur(self):
+        nivel_blur = tk.simpledialog.askinteger("Input", "Insira o nível do blur", parent=self.master, minvalue=0, maxvalue=20)
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = simple_blur(array_imagem, nivel_blur)
+        # simple_blur(array_imagem, nivel_blur)
+        print(nova_imagem[0][0])
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def teste(self):
+        imgpil = ImageTk.getimage(self.img)
+        array = np.array(imgpil.convert('L'))
+        print(array.shape)
+    
 
 root = tk.Tk()
 app = Application(master=root)
