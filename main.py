@@ -1,8 +1,11 @@
+from skimage.util import dtype
 from funcs import simple_blur
+from multidim_idct import *
 import tkinter as tk
 from tkinter import filedialog, image_names
 from tkinter.constants import BOTTOM, LEFT, NW, RIGHT
 from tkinter.simpledialog import askinteger
+from matplotlib import pyplot as plt
 
 from PIL import ImageTk,Image
 from skimage import data, feature, filters
@@ -62,14 +65,38 @@ class Application(tk.Frame):
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
     def save_image(self):
-        imgpil = ImageTk.getimage(self.img)
-        directory = filedialog.asksaveasfilename(initialfile="Sem_Título",title='Salvar imagem', filetypes=[('PNG image', '.png'), ('JPG image', '.jpg'), ('WEBP image', '.webp')])
-        if not directory:
-            return
+        im = np.array(ImageTk.getimage(self.img))
+        im = im[:,:, :3]
 
-        if not (directory.endswith('.png') or directory.endswith('.jpg') or directory.endswith('.webp')):
-            directory += '.png'
-        imgpil.save(directory, format="png")
+        x = np.zeros(im.shape, dtype=int)
+        x[:, :, 0] = im[:, :, 2]
+        x[:, :, 1] = im[:, :, 1]
+        x[:, :, 2] = im[:, :, 0]
+
+        quants = [1] #[0.5, 1, 2, 5, 10]
+        blocks = [(8,8)] #[(2, 8), (8, 8), (16, 16), (32, 32), (200, 200)]
+        for qscale in quants:
+            for bx, by in blocks:
+                quant = (
+                    (np.ones((bx, by)) * (qscale * qscale))
+                    .clip(-100, 100)  # to prevent clipping
+                    .reshape((1, bx, 1, by, 1))
+                )
+                enc = encode_dct(x, bx, by)
+                encq = encode_quant(enc, quant)
+                encz = encode_zip(encq)
+                decz = decode_zip(encz, encq.shape)
+                decq = decode_quant(encq, quant)
+                dec = decode_dct(decq, bx, by)
+                cv2.imwrite("IMG_0108_recompressed_quant_{}_block_{}x{}.png".format(qscale, bx, by), dec.astype(np.uint8))                
+        # imgpil = ImageTk.getimage(self.img)
+        # directory = filedialog.asksaveasfilename(initialfile="Sem_Título",title='Salvar imagem', filetypes=[('PNG image', '.png'), ('JPG image', '.jpg'), ('WEBP image', '.webp')])
+        # if not directory:
+        #     return
+
+        # if not (directory.endswith('.png') or directory.endswith('.jpg') or directory.endswith('.webp')):
+        #     directory += '.png'
+        # imgpil.save(directory, format="png")
 
     def call_simple_blur(self):
         nivel_blur = tk.simpledialog.askinteger("Input", "Insira o nível do blur", parent=self.master, minvalue=0, maxvalue=20)
