@@ -1,5 +1,5 @@
 from skimage.util import dtype
-from funcs import simple_blur
+from funcs import *
 from multidim_idct import *
 import tkinter as tk
 from tkinter import filedialog, image_names
@@ -20,7 +20,7 @@ class Application(tk.Frame):
         self.create_widgets()        
 
     def desenhar_imagemRGB(self, imagem):
-        print(imagem.shape)
+        print(imagem[0,0])
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
@@ -48,16 +48,18 @@ class Application(tk.Frame):
         self.hi_there3["command"] = self.call_simple_blur
         self.hi_there3.pack(side=LEFT, padx=10, pady=5)
 
+        self.hi_there5 = tk.Button(self)
+        self.hi_there5["text"] = "Mosaico"
+        self.hi_there5["command"] = self.call_mosaic
+        self.hi_there5.pack(side=LEFT, padx=10, pady=5)
+
         self.hi_there4 = tk.Button(self)
-        self.hi_there4["text"] = "4Hello World\n(click me)"
-        self.hi_there4["command"] = self.teste
+        self.hi_there4["text"] = "Rotacionar Imagem"
+        self.hi_there4["command"] = self.call_rotation
         self.hi_there4.pack(side=LEFT, padx=10, pady=5)
 
         self.quit = tk.Button(self, text="QUIT", fg="red", command=self.master.destroy)
         self.quit.pack(side=RIGHT, padx=100, pady=5)
-
-    def say_hi(self):
-        print("hi there, everyone!")
 
     def open_image(self):
         self.file = filedialog.askopenfilename(initialdir = "/Imagem", filetypes=[('image files', ('.png', '.jpg', '.webp'))])
@@ -88,7 +90,7 @@ class Application(tk.Frame):
                 decz = decode_zip(encz, encq.shape)
                 decq = decode_quant(encq, quant)
                 dec = decode_dct(decq, bx, by)
-                cv2.imwrite("IMG_0108_recompressed_quant_{}_block_{}x{}.png".format(qscale, bx, by), dec.astype(np.uint8))                
+                cv2.imwrite("IMG.png", dec.astype(np.uint8))                
         # imgpil = ImageTk.getimage(self.img)
         # directory = filedialog.asksaveasfilename(initialfile="Sem_Título",title='Salvar imagem', filetypes=[('PNG image', '.png'), ('JPG image', '.jpg'), ('WEBP image', '.webp')])
         # if not directory:
@@ -100,16 +102,31 @@ class Application(tk.Frame):
 
     def call_simple_blur(self):
         nivel_blur = tk.simpledialog.askinteger("Input", "Insira o nível do blur", parent=self.master, minvalue=0, maxvalue=20)
+        if nivel_blur == None:
+            return
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = simple_blur(array_imagem, nivel_blur)
         # simple_blur(array_imagem, nivel_blur)
-        print(nova_imagem[0][0])
+        # print(nova_imagem[0][0])
         self.desenhar_imagemRGB(nova_imagem)
 
-    def teste(self):
-        imgpil = ImageTk.getimage(self.img)
-        array = np.array(imgpil.convert('L'))
-        print(array.shape)
+    def call_mosaic(self):
+        nivel_blur = tk.simpledialog.askinteger("Input", "Insira o nível do mosaico", parent=self.master, minvalue=0, maxvalue=20)
+        if nivel_blur == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = mosaic(array_imagem, nivel_blur)
+        # simple_blur(array_imagem, nivel_blur)
+        # print(nova_imagem[0][0])
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_rotation(self):
+        angulo = tk.simpledialog.askinteger("Input", "Insira o valor da rotação em graus", parent=self.master, minvalue=-360, maxvalue=360)
+        if angulo == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = rotate_img(array_imagem, angulo)
+        self.desenhar_imagemRGB(nova_imagem)
     
 
 root = tk.Tk()
