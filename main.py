@@ -34,7 +34,7 @@ class Application(tk.Frame):
     def createFileMenu(self):
         file = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Arquivo', menu = file)
-        file.add_command(label ='Abrir imagem', command = self.open_image)
+        file.add_command(label ='Abrir imagem...', command = self.open_image)
         file.add_command(label ='Salvar imagem', command = self.save_image)
         file.add_separator()
         file.add_command(label ='Sair', command = self.master.destroy, foreground='red')
@@ -42,15 +42,15 @@ class Application(tk.Frame):
     def createEffectsMenu(self):
         menu = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Efeitos', menu = menu)
-        menu.add_command(label ='Blur', command =  self.call_simple_blur)
-        menu.add_command(label ='Mosaic', command =  self.call_mosaic)
+        menu.add_command(label ='Blur...', command =  self.call_simple_blur)
+        menu.add_command(label ='Mosaic...', command =  self.call_mosaic)
+        menu.add_command(label ='Match color histogram...', command =  self.call_match_operation)
 
     def createImageMenu(self):
         menu = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Imagem', menu = menu)
-        menu.add_command(label ='Rotacionar', command =  self.call_simple_blur)
-        menu.add_command(label ='Mosaic', command =  self.call_mosaic)
-        menu.add_command(label ='Histograma', command = self.draw_3hist)
+        menu.add_command(label ='Rotacionar...', command =  self.call_simple_blur)
+        menu.add_command(label ='Histograma...', command = self.draw_3hist)
         
 
     def desenhar_imagemRGB(self, imagem):
