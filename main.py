@@ -3,9 +3,10 @@ from funcs import *
 from multidim_idct import *
 import tkinter as tk
 from tkinter import filedialog, image_names
-from tkinter.constants import BOTTOM, LEFT, NW, RIGHT
+from tkinter.constants import BOTTOM, LEFT, NW, RIGHT, TOP
 from tkinter.simpledialog import askinteger
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PIL import ImageTk,Image
 from skimage import data, feature, filters
@@ -17,7 +18,39 @@ class Application(tk.Frame):
         super().__init__(master)
         self.master = master
         self.pack()
-        self.create_widgets()        
+        self.create_widgets()  
+        self.createMenu()      
+    
+    def createMenu(self):
+        self.menubar = tk.Menu(self.master)
+
+        self.createFileMenu()
+        self.createEffectsMenu()
+        self.createImageMenu()
+
+        self.master.config(menu = self.menubar)
+
+    def createFileMenu(self):
+        file = tk.Menu(self.menubar, tearoff = 0)
+        self.menubar.add_cascade(label ='Arquivo', menu = file)
+        file.add_command(label ='Abrir imagem', command = self.open_image)
+        file.add_command(label ='Salvar imagem', command = self.save_image)
+        file.add_separator()
+        file.add_command(label ='Sair', command = self.master.destroy, foreground='red')
+
+    def createEffectsMenu(self):
+        menu = tk.Menu(self.menubar, tearoff = 0)
+        self.menubar.add_cascade(label ='Efeitos', menu = menu)
+        menu.add_command(label ='Blur', command =  self.call_simple_blur)
+        menu.add_command(label ='Mosaic', command =  self.call_mosaic)
+
+    def createImageMenu(self):
+        menu = tk.Menu(self.menubar, tearoff = 0)
+        self.menubar.add_cascade(label ='Imagem', menu = menu)
+        menu.add_command(label ='Rotacionar', command =  self.call_simple_blur)
+        menu.add_command(label ='Mosaic', command =  self.call_mosaic)
+        menu.add_command(label ='Histograma', command = self.draw_3hist)
+        
 
     def desenhar_imagemRGB(self, imagem):
         print(imagem[0,0])
@@ -31,35 +64,6 @@ class Application(tk.Frame):
         camera = data.camera()
         self.img = ImageTk.PhotoImage(image=Image.fromarray(camera))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
-
-        self.hi_there = tk.Button(self)
-        self.hi_there["text"] = "Abrir Imagem ↑"
-        self.hi_there["command"] = self.open_image
-        self.hi_there["fg"] = "blue"
-        self.hi_there.pack(side=LEFT, padx=10, pady=5)
-
-        self.hi_there2 = tk.Button(self)
-        self.hi_there2["text"] = "Salvar imagem ↓"
-        self.hi_there2["command"] = self.save_image
-        self.hi_there2.pack(side=LEFT, padx=10, pady=5)
-        
-        self.hi_there3 = tk.Button(self)
-        self.hi_there3["text"] = "Blur Simples"
-        self.hi_there3["command"] = self.call_simple_blur
-        self.hi_there3.pack(side=LEFT, padx=10, pady=5)
-
-        self.hi_there5 = tk.Button(self)
-        self.hi_there5["text"] = "Mosaico"
-        self.hi_there5["command"] = self.call_mosaic
-        self.hi_there5.pack(side=LEFT, padx=10, pady=5)
-
-        self.hi_there4 = tk.Button(self)
-        self.hi_there4["text"] = "Rotacionar Imagem"
-        self.hi_there4["command"] = self.call_rotation
-        self.hi_there4.pack(side=LEFT, padx=10, pady=5)
-
-        self.quit = tk.Button(self, text="QUIT", fg="red", command=self.master.destroy)
-        self.quit.pack(side=RIGHT, padx=100, pady=5)
 
     def open_image(self):
         self.file = filedialog.askopenfilename(initialdir = "/Imagem", filetypes=[('image files', ('.png', '.jpg', '.webp'))])
@@ -127,6 +131,14 @@ class Application(tk.Frame):
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = rotate_img(array_imagem, angulo)
         self.desenhar_imagemRGB(nova_imagem)
+
+    def draw_3hist(self):
+        img = np.array(ImageTk.getimage(self.img))
+        plt.hist(img[:,:,0].ravel(), 256, [0,256], color='red', alpha=0.5)
+        plt.hist(img[:,:,1].ravel(), 256, [0,256], color='green', alpha=0.5)
+        plt.hist(img[:,:,2].ravel(), 256, [0,256], color='blue', alpha=0.5)
+        plt.show()
+
     
 
 root = tk.Tk()
