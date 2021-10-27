@@ -1,3 +1,4 @@
+from numpy.core.records import array
 from skimage.util import dtype
 from funcs import *
 from multidim_idct import *
@@ -67,6 +68,8 @@ class Application(tk.Frame):
 
     def open_image(self):
         self.file = filedialog.askopenfilename(initialdir = "/Imagem", filetypes=[('image files', ('.png', '.jpg', '.webp'))])
+        if self.file == "":
+            return
         self.img = ImageTk.PhotoImage(Image.open(self.file))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
@@ -140,6 +143,19 @@ class Application(tk.Frame):
         plt.show()
 
     
+    def call_match_operation(self):
+        array_imagem1 = np.array(ImageTk.getimage(self.img))
+        file = filedialog.askopenfilename(initialdir = "/Imagem", filetypes=[('image files', ('.png', '.jpg', '.webp'))])
+        # print(type(self.img))
+        if file == "":
+            return
+        imagem2 = ImageTk.PhotoImage(Image.open(file))
+        # print(type(imagem2))
+        array_imagem2 = np.array(ImageTk.getimage(imagem2))
+        # print(array_imagem1.shape)
+        # print(array_imagem2.shape)
+        nova_imagem = match_operation(array_imagem1, array_imagem2)
+        self.desenhar_imagemRGB(nova_imagem)
 
 root = tk.Tk()
 app = Application(master=root)

@@ -1,4 +1,5 @@
-from skimage import data, feature, filters, transform
+import matplotlib
+from skimage import data, feature, filters, transform, exposure
 import numpy as np
 import skimage
 from skimage.util.dtype import img_as_uint
@@ -55,6 +56,10 @@ def mosaic(imagem, tamanho_kernel):
     
     # print(imagemBlur[0][0])
     return imagemBlur
+
+def match_operation(imagem1, imagem2):
+    match = exposure.match_histograms(imagem1, imagem2, multichannel=True)
+    return img_as_uint(match)
 
 def rotate_img(imagem, angulo):    
     a = transform.rotate(imagem, angle=angulo)
