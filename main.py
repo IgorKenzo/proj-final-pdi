@@ -49,7 +49,7 @@ class Application(tk.Frame):
     def createImageMenu(self):
         menu = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Imagem', menu = menu)
-        menu.add_command(label ='Rotacionar...', command =  self.call_simple_blur)
+        menu.add_command(label ='Rotacionar...', command =  self.call_rotation)
         menu.add_command(label ='Histograma...', command = self.draw_3hist)
         
 

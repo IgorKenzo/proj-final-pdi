@@ -1,5 +1,6 @@
 import matplotlib
 from skimage import data, feature, filters, transform, exposure
+from scipy.ndimage import rotate
 import numpy as np
 import skimage
 from skimage.util.dtype import img_as_uint
@@ -62,6 +63,6 @@ def match_operation(imagem1, imagem2):
     return img_as_uint(match)
 
 def rotate_img(imagem, angulo):    
-    a = transform.rotate(imagem, angle=angulo)
+    a = rotate(imagem, angle=angulo, reshape=False)
     return img_as_uint(a)
 
