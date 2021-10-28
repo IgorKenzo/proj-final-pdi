@@ -66,3 +66,17 @@ def rotate_img(imagem, angulo):
     a = rotate(imagem, angle=angulo, reshape=False)
     return img_as_uint(a)
 
+def flip_hor(imagem):
+    imgFlip = np.zeros(imagem.shape)
+    for x in range(imagem.shape[0]):
+        for y in range(imagem.shape[1]):
+            imgFlip[x, -y] = imagem[x, y]
+    return imgFlip
+
+def flip_ver(imagem):
+    imgFlip = np.zeros(imagem.shape)
+    for x in range(imagem.shape[0]):
+        for y in range(imagem.shape[1]):
+            imgFlip[-x, y] = imagem[x, y]
+    return imgFlip
+

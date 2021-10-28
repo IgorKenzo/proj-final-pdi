@@ -51,6 +51,8 @@ class Application(tk.Frame):
         self.menubar.add_cascade(label ='Imagem', menu = menu)
         menu.add_command(label ='Rotacionar...', command =  self.call_rotation)
         menu.add_command(label ='Histograma...', command = self.draw_3hist)
+        menu.add_command(label ='Espelhar Horizontalmente', command = self.call_flip_hor)
+        menu.add_command(label ='Espelhar Verticalmente', command = self.call_flip_ver)
         
 
     def desenhar_imagemRGB(self, imagem):
@@ -155,6 +157,16 @@ class Application(tk.Frame):
         # print(array_imagem1.shape)
         # print(array_imagem2.shape)
         nova_imagem = match_operation(array_imagem1, array_imagem2)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_flip_hor(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = flip_hor(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_flip_ver(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = flip_ver(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
 root = tk.Tk()
