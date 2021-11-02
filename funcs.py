@@ -1,8 +1,8 @@
+from typing import Final
 import matplotlib
-from skimage import data, feature, filters, transform, exposure
+from skimage import data, restoration, filters, util, exposure, morphology
 from scipy.ndimage import rotate
 import numpy as np
-import skimage
 from skimage.util.dtype import img_as_uint
 
 def simple_blur(imagem, tamanho_kernel):
@@ -80,3 +80,93 @@ def flip_ver(imagem):
             imgFlip[-x, y] = imagem[x, y]
     return imgFlip
 
+def filtroGaussiano(imagem, sigma):
+    tamanhoFiltro = 2 * int(4*sigma-0.5) + 1
+    filtro = np.zeros((tamanhoFiltro, tamanhoFiltro), np.float32)
+
+    h = tamanhoFiltro // 2
+    w = tamanhoFiltro // 2
+
+    for i in range(-h, h+1):
+        for j in range(-w, w+1):
+            x1 = 2 * np.pi * (sigma**2)
+            x2 = np.exp(-(i**2 + j**2)/(2 * sigma**2))
+            filtro[i+h][j+w] = (1/x1)*x2
+
+    filtrada = np.zeros_like(imagem, np.float32)
+    filtrada[:, :] = convolucao(imagem[:,:], filtro)
+
+    return filtrada.astype(np.uint8)
+
+
+def convolucao(imagem, kernel):
+    himagem = imagem.shape[0]
+    wimagem = imagem.shape[1]
+
+    hkernel = kernel.shape[0]
+    wkernel = kernel.shape[1]
+
+    h = hkernel//2
+    w = wkernel//2
+
+    imagemconv = np.zeros(imagem.shape, np.float32)
+
+    for linha in range(himagem):
+        for coluna in range(wimagem):
+            soma = 0
+            for linhak in range(hkernel):
+                for colunak in range(wkernel):
+                    if linha+linhak-h >= 0 and linha+linhak-h < himagem and coluna+colunak-w >= 0 and coluna+colunak-w < wimagem:
+                        soma += kernel[linhak][colunak] * imagem[linha+linhak-h][coluna+colunak-w]
+            imagemconv[linha][coluna] = soma
+
+    return imagemconv
+
+def gaussian_filter_default(imagem, sigma):    
+    return filters.gaussian(imagem, sigma, preserve_range=True, multichannel=True)
+
+def salt_and_peper(imagem):
+    a = util.random_noise(imagem, mode="s&p", salt_vs_pepper=0.5)
+    return a*255
+
+def unsharp_mask(imagem):
+    nova_imagem = np.zeros(imagem.shape, np.uint8)
+    nova_imagem[:, :, 3] = 255
+
+    imagem = imagem[:, :, :3]
+    imagem = imagem / 255
+    borrada = filters.gaussian(imagem, sigma=2, mode="constant", cval=0, multichannel=True)
+
+    subtraida = imagem - borrada
+
+    final = imagem + (2 * subtraida)
+    
+    nova_imagem[:, :, :3] = final*255
+
+    print(nova_imagem)
+    return nova_imagem
+
+def median_filter(imagem):
+    disco = morphology.disk(1)
+    limpa = filters.median(imagem[:, :, 0], disco, mode='constant', cval=0)
+    
+    nova_imagem = np.zeros(imagem.shape, np.uint8)
+    nova_imagem[:, :, 0] = limpa
+    nova_imagem[:, :, 1] = limpa
+    nova_imagem[:, :, 2] = limpa
+    nova_imagem[:, :, 3] = 255
+    
+    return nova_imagem
+
+def noise(imagem, sigma):
+    sigma = sigma/100
+    img = util.random_noise(imagem, var=sigma**2)
+    img *= 255
+    img[:, :, 3] = 255
+    return img
+
+def Non_Local_Means(imagem):
+    sigmaEstimado = np.mean(restoration.estimate_sigma(imagem, multichannel=True))
+
+    limpa = restoration.denoise_nl_means(imagem, h=0.6 * sigmaEstimado, sigma=sigmaEstimado, patch_size=5, patch_distance=6, multichannel=True, preserve_range=True)
+    return limpa

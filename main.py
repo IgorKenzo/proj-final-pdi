@@ -1,4 +1,6 @@
 from numpy.core.records import array
+from scipy.ndimage.filters import gaussian_filter
+from skimage.restoration import non_local_means
 from skimage.util import dtype
 from funcs import *
 from multidim_idct import *
@@ -27,6 +29,7 @@ class Application(tk.Frame):
 
         self.createFileMenu()
         self.createEffectsMenu()
+        self.createDefectMenu()
         self.createImageMenu()
 
         self.master.config(menu = self.menubar)
@@ -35,7 +38,8 @@ class Application(tk.Frame):
         file = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Arquivo', menu = file)
         file.add_command(label ='Abrir imagem...', command = self.open_image)
-        file.add_command(label ='Salvar imagem', command = self.save_image)
+        file.add_command(label ='Salvar como...', command = self.save_image)
+        file.add_command(label ='Salvar rápido como JPG', command = self.save_image_jpg)
         file.add_separator()
         file.add_command(label ='Sair', command = self.master.destroy, foreground='red')
 
@@ -45,6 +49,16 @@ class Application(tk.Frame):
         menu.add_command(label ='Blur...', command =  self.call_simple_blur)
         menu.add_command(label ='Mosaic...', command =  self.call_mosaic)
         menu.add_command(label ='Match color histogram...', command =  self.call_match_operation)
+        menu.add_command(label ='Gaussian Blur', command =  self.call_gaussian_blur)
+        menu.add_command(label ='Unsharp Mask (estranho)', command =  self.call_unsharp_mask)
+        menu.add_command(label ='Median Filter', command =  self.call_median_filter)
+        menu.add_command(label ='Non Local Means', command =  self.call_non_local_means)
+
+    def createDefectMenu(self):
+        menu = tk.Menu(self.menubar, tearoff= 0)
+        self.menubar.add_cascade(label ='Defeitos', menu = menu)
+        menu.add_command(label ='Sal e Pimenta', command =  self.call_sp)
+        menu.add_command(label ='Ruído', command =  self.call_noise)
 
     def createImageMenu(self):
         menu = tk.Menu(self.menubar, tearoff = 0)
@@ -53,10 +67,8 @@ class Application(tk.Frame):
         menu.add_command(label ='Histograma...', command = self.draw_3hist)
         menu.add_command(label ='Espelhar Horizontalmente', command = self.call_flip_hor)
         menu.add_command(label ='Espelhar Verticalmente', command = self.call_flip_ver)
-        
 
     def desenhar_imagemRGB(self, imagem):
-        print(imagem[0,0])
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
@@ -75,7 +87,7 @@ class Application(tk.Frame):
         self.img = ImageTk.PhotoImage(Image.open(self.file))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
-    def save_image(self):
+    def save_image_jpg(self):
         im = np.array(ImageTk.getimage(self.img))
         im = im[:,:, :3]
 
@@ -100,14 +112,16 @@ class Application(tk.Frame):
                 decq = decode_quant(encq, quant)
                 dec = decode_dct(decq, bx, by)
                 cv2.imwrite("IMG.png", dec.astype(np.uint8))                
-        # imgpil = ImageTk.getimage(self.img)
-        # directory = filedialog.asksaveasfilename(initialfile="Sem_Título",title='Salvar imagem', filetypes=[('PNG image', '.png'), ('JPG image', '.jpg'), ('WEBP image', '.webp')])
-        # if not directory:
-        #     return
+        
+    def save_image(self):
+        imgpil = ImageTk.getimage(self.img)
+        directory = filedialog.asksaveasfilename(initialfile="Sem_Título",title='Salvar imagem', filetypes=[('PNG image', '.png'), ('JPG image', '.jpg'), ('WEBP image', '.webp')])
+        if not directory:
+            return
 
-        # if not (directory.endswith('.png') or directory.endswith('.jpg') or directory.endswith('.webp')):
-        #     directory += '.png'
-        # imgpil.save(directory, format="png")
+        if not (directory.endswith('.png') or directory.endswith('.jpg') or directory.endswith('.webp')):
+            directory += '.png'
+        imgpil.save(directory, format="png")
 
     def call_simple_blur(self):
         nivel_blur = tk.simpledialog.askinteger("Input", "Insira o nível do blur", parent=self.master, minvalue=0, maxvalue=20)
@@ -167,6 +181,50 @@ class Application(tk.Frame):
     def call_flip_ver(self):
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = flip_ver(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_filtro_gaussiano(self):
+        nivel_blur = tk.simpledialog.askinteger("Input", "Insira o sigma", parent=self.master, minvalue=0, maxvalue=40)
+        if nivel_blur == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = filtroGaussiano(array_imagem, nivel_blur)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_gaussian_blur(self):
+        nivel_blur = tk.simpledialog.askinteger("Input", "Insira o sigma", parent=self.master, minvalue=0, maxvalue=40)
+        if nivel_blur == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = gaussian_filter_default(array_imagem, nivel_blur)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_sp(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = salt_and_peper(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_noise(self):
+        sigma = tk.simpledialog.askinteger("Input", "Insira o sigma [0 - 100]", parent=self.master, minvalue=0, maxvalue=100)
+        if sigma == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = noise(array_imagem, sigma)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_unsharp_mask(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = unsharp_mask(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_median_filter(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = median_filter(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_non_local_means(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = Non_Local_Means(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
 root = tk.Tk()
