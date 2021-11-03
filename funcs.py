@@ -170,3 +170,77 @@ def Non_Local_Means(imagem):
 
     limpa = restoration.denoise_nl_means(imagem, h=0.6 * sigmaEstimado, sigma=sigmaEstimado, patch_size=5, patch_distance=6, multichannel=True, preserve_range=True)
     return limpa
+
+def segmentacao_Binaria(imagem, limiar):
+    classificada = np.ones(imagem.shape)
+    classificada *= 255
+
+    for linha in range(imagem.shape[0]):
+        for coluna in range(imagem.shape[0]):
+            if imagem[linha][coluna][0] < limiar:
+                classificada[linha][coluna][0] = 0
+
+    return classificada
+
+def segBin_Isodata(imagem):
+    limiar = filters.threshold_isodata(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
+def segBin_Li(imagem):
+    limiar = filters.threshold_li(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
+def segBin_Mean(imagem):
+    limiar = filters.threshold_mean(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
+def segBin_Minimum(imagem):
+    limiar = filters.threshold_minimum(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
+def segBin_otsu(imagem):
+    limiar = filters.threshold_otsu(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
+def segBin_triangle(imagem):
+    limiar = filters.threshold_triangle(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
+def segBin_yen(imagem):
+    limiar = filters.threshold_yen(imagem)
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img

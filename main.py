@@ -54,6 +54,16 @@ class Application(tk.Frame):
         menu.add_command(label ='Median Filter', command =  self.call_median_filter)
         menu.add_command(label ='Non Local Means', command =  self.call_non_local_means)
 
+        menuSegBinaria = tk.Menu(menu, tearoff = 0)
+        menu.add_cascade(label ="Segmentação Binária", menu = menuSegBinaria)
+        menuSegBinaria.add_command(label ="Isodata", command= self.call_segBin_Isodata)
+        menuSegBinaria.add_command(label ="Li", command= self.call_segBin_Li)
+        menuSegBinaria.add_command(label ="Mean", command= self.call_segBin_Mean)
+        menuSegBinaria.add_command(label ="Minimum", command= self.call_segBin_Minimum)
+        menuSegBinaria.add_command(label ="Otsu", command= self.call_segBin_Otsu)
+        menuSegBinaria.add_command(label ="Triangulo", command= self.call_segBin_Triangle)
+        menuSegBinaria.add_command(label ="Yen", command= self.call_segBin_Yen)
+
     def createDefectMenu(self):
         menu = tk.Menu(self.menubar, tearoff= 0)
         self.menubar.add_cascade(label ='Defeitos', menu = menu)
@@ -225,6 +235,41 @@ class Application(tk.Frame):
     def call_non_local_means(self):
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = Non_Local_Means(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Isodata(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_Isodata(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Li(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_Li(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Mean(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_Mean(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Minimum(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_Minimum(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Otsu(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_otsu(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Triangle(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_triangle(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_segBin_Yen(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_yen(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
 root = tk.Tk()
