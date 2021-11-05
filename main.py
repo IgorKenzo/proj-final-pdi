@@ -77,6 +77,14 @@ class Application(tk.Frame):
         menu.add_command(label ='Histograma...', command = self.draw_3hist)
         menu.add_command(label ='Espelhar Horizontalmente', command = self.call_flip_hor)
         menu.add_command(label ='Espelhar Verticalmente', command = self.call_flip_ver)
+        menu.add_command(label="Quantizar", command=self.quantizarImg)
+
+    def quantizarImg(self):
+        im = np.array(ImageTk.getimage(self.img))
+        imq = encode_quant(im, 3)
+        im = decode_quant(imq,3)
+        self.img = im
+        self.desenhar_imagemRGB(self.img)
 
     def desenhar_imagemRGB(self, imagem):
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
