@@ -1,9 +1,10 @@
 from typing import Final
-import matplotlib
+import matplotlib.pyplot as plt
 from skimage import data, restoration, filters, util, exposure, morphology
 from scipy.ndimage import rotate
 import numpy as np
 from skimage.util.dtype import img_as_uint
+import cv2
 
 def simple_blur(imagem, tamanho_kernel):
     imagemBlur = np.zeros(imagem.shape, dtype=np.uint8)
@@ -244,3 +245,42 @@ def segBin_yen(imagem):
     img[:, :, 3] = 255
 
     return img
+
+def fourrierTransform(img, tipo):
+    # dft = np.fft.fft2(img)
+    # shift_dft = np.fft.fftshift(dft)
+    # magShift = np.log(1+abs(shift_dft))
+    dft2 = cv2.dft(np.float32(img), flags=cv2.DFT_COMPLEX_OUTPUT)
+
+    shift = np.fft.fftshift(dft2)
+    magnitude2 = 20 * np.log(cv2.magnitude(shift[:,:,0], shift[:,:,1]))
+    lin, col = img.shape
+
+    mascara = None
+
+    if tipo == "alta":
+        mascara = np.ones((lin, col, 2), dtype=np.uint8)
+    else:
+        mascara = np.zeros((lin, col, 2), dtype=np.uint8)
+
+    r = 50
+
+    centro = [lin//2, col//2]
+
+    x, y = np.ogrid[:lin, :col]
+
+    area_mascara = (x - centro[0]) ** 2 + (y - centro[1]) ** 2 <= r ** 2
+
+    mascara[area_mascara] = 0 if tipo == "alta" else 1
+
+    mascara_shift2 = shift * mascara
+
+    mag_masc_shift = np.log(1+abs(mascara_shift2))
+    ma = cv2.magnitude(mag_masc_shift[:,:,0], mag_masc_shift[:,:,1])
+    print(mascara)
+
+    inv_shift = np.fft.ifftshift(mascara_shift2)
+    inv_dft = cv2.idft(inv_shift)
+    mag2 = cv2.magnitude(inv_dft[:,:,0], inv_dft[:,:,1])
+
+    return magnitude2, mag_masc_shift, mag2 #inv_dft, mag2
