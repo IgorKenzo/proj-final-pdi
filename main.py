@@ -9,6 +9,7 @@ from tkinter import filedialog, image_names
 from tkinter.constants import BOTTOM, LEFT, NW, RIGHT, TOP
 from tkinter.simpledialog import askinteger
 from matplotlib import pyplot as plt
+from matplotlib import cm
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PIL import ImageTk,Image
@@ -39,6 +40,8 @@ class Application(tk.Frame):
         file = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Arquivo', menu = file)
         file.add_command(label ='Abrir imagem...', command = self.open_image)
+        file.add_command(label ='Abrir câmera', command = self.open_camera)
+        file.add_command(label ='Abrir moedas', command = self.open_coins)
         file.add_command(label ='Salvar como...', command = self.save_image)
         file.add_command(label ='Salvar rápido como JPG', command = self.save_image_jpg)
         file.add_separator()
@@ -64,6 +67,14 @@ class Application(tk.Frame):
         menuSegBinaria.add_command(label ="Otsu", command= self.call_segBin_Otsu)
         menuSegBinaria.add_command(label ="Triangulo", command= self.call_segBin_Triangle)
         menuSegBinaria.add_command(label ="Yen", command= self.call_segBin_Yen)
+
+        menuDetecBordas = tk.Menu(menu, tearoff = 0)
+        menu.add_cascade(label = "Detecção de Bordas", menu = menuDetecBordas)
+        menuDetecBordas.add_command(label ="Roberts", command= lambda: self.call_detecBordas(detecRoberts))
+        menuDetecBordas.add_command(label ="Sobel", command= lambda: self.call_detecBordas(detecSobel))
+        menuDetecBordas.add_command(label ="Scharr", command= lambda: self.call_detecBordas(detecScharr))
+        menuDetecBordas.add_command(label ="Prewitt", command= lambda: self.call_detecBordas(detecPrewitt))
+        menuDetecBordas.add_command(label ="Farid", command= lambda: self.call_detecBordas(detecFarid))
 
     def createDefectMenu(self):
         menu = tk.Menu(self.menubar, tearoff= 0)
@@ -114,6 +125,14 @@ class Application(tk.Frame):
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
+    def desenhar_imagemRGBFloat(self, imagem):
+        print(imagem)
+        formatted = (imagem * 255 / np.max(imagem)).astype('uint8')
+        formatted[:, :, 1] = formatted[:, :, 0]
+        formatted[:, :, 2] = formatted[:, :, 0]
+        self.img = ImageTk.PhotoImage(Image.fromarray(formatted))
+        self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
     def create_widgets(self):
         self.canvas = tk.Canvas(self, width = 800, height = 800)      
         self.canvas.pack(side=BOTTOM)
@@ -127,6 +146,16 @@ class Application(tk.Frame):
         if self.file == "":
             return
         self.img = ImageTk.PhotoImage(Image.open(self.file))
+        self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
+    def open_camera(self):
+        camera = data.camera()
+        self.img = ImageTk.PhotoImage(image=Image.fromarray(camera))
+        self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
+    def open_coins(self):
+        moedas = data.coins()
+        self.img = ImageTk.PhotoImage(image=Image.fromarray(moedas))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
     def save_image_jpg(self):
@@ -256,7 +285,7 @@ class Application(tk.Frame):
 
     def call_unsharp_mask(self):
         array_imagem = np.array(ImageTk.getimage(self.img))
-        nova_imagem = unsharp_mask(array_imagem)
+        nova_imagem = unsharp_mask2(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
     def call_median_filter(self):
@@ -302,6 +331,11 @@ class Application(tk.Frame):
     def call_segBin_Yen(self):
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = segBin_yen(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_detecBordas(self, func):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = func(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
 root = tk.Tk()

@@ -1,10 +1,11 @@
 from typing import Final
 import matplotlib.pyplot as plt
-from skimage import data, restoration, filters, util, exposure, morphology
+from skimage import img_as_float, restoration, filters, util, exposure, morphology
 from scipy.ndimage import rotate
 import numpy as np
 from skimage.util.dtype import img_as_uint
-import cv2
+from skimage.filters import roberts, sobel, scharr, prewitt, farid, unsharp_mask
+import cv2 as cv
 
 def simple_blur(imagem, tamanho_kernel):
     imagemBlur = np.zeros(imagem.shape, dtype=np.uint8)
@@ -130,19 +131,40 @@ def salt_and_peper(imagem):
     a = util.random_noise(imagem, mode="s&p", salt_vs_pepper=0.5)
     return a*255
 
-def unsharp_mask(imagem):
-    nova_imagem = np.zeros(imagem.shape, np.uint8)
-    nova_imagem[:, :, 3] = 255
+def unsharp_mask1(imagem):
+    nova_imagem = np.zeros(imagem.shape, np.float)
+    nova_imagem[:, :, 3] = 1.0
 
     imagem = imagem[:, :, :3]
-    imagem = imagem / 255
-    borrada = filters.gaussian(imagem, sigma=2, mode="constant", cval=0, multichannel=True)
+
+    imagem = img_as_float(imagem)
+    # print(imagem) 
+    borrada = filters.gaussian(imagem, sigma=2, mode="constant", cval=0)
+    # print(borrada)
 
     subtraida = imagem - borrada
+    # print(subtraida)
 
     final = imagem + (2 * subtraida)
+    # print(final)
     
-    nova_imagem[:, :, :3] = final*255
+    return final
+
+def unsharp_mask2(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+
+    imagem = imagem[:, :, :3]
+    hsv = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+
+    H, S, V = cv.split(hsv)
+
+    im = unsharp_mask(V, radius=2, amount=2)
+    # print(im*255)
+
+    nova_imagem[:, :, 0] = im*255
+    nova_imagem[:, :, 1] = im*255
+    nova_imagem[:, :, 2] = im*255
+    nova_imagem[:, :, 3] = 255
 
     print(nova_imagem)
     return nova_imagem
@@ -250,10 +272,10 @@ def fourrierTransform(img, tipo):
     # dft = np.fft.fft2(img)
     # shift_dft = np.fft.fftshift(dft)
     # magShift = np.log(1+abs(shift_dft))
-    dft2 = cv2.dft(np.float32(img), flags=cv2.DFT_COMPLEX_OUTPUT)
+    dft2 = cv.dft(np.float32(img), flags=cv.DFT_COMPLEX_OUTPUT)
 
     shift = np.fft.fftshift(dft2)
-    magnitude2 = 20 * np.log(cv2.magnitude(shift[:,:,0], shift[:,:,1]))
+    magnitude2 = 20 * np.log(cv.magnitude(shift[:,:,0], shift[:,:,1]))
     lin, col = img.shape
 
     mascara = None
@@ -276,11 +298,71 @@ def fourrierTransform(img, tipo):
     mascara_shift2 = shift * mascara
 
     mag_masc_shift = np.log(1+abs(mascara_shift2))
-    ma = cv2.magnitude(mag_masc_shift[:,:,0], mag_masc_shift[:,:,1])
+    ma = cv.magnitude(mag_masc_shift[:,:,0], mag_masc_shift[:,:,1])
     print(mascara)
 
     inv_shift = np.fft.ifftshift(mascara_shift2)
-    inv_dft = cv2.idft(inv_shift)
-    mag2 = cv2.magnitude(inv_dft[:,:,0], inv_dft[:,:,1])
+    inv_dft = cv.idft(inv_shift)
+    mag2 = cv.magnitude(inv_dft[:,:,0], inv_dft[:,:,1])
 
     return magnitude2, mag_masc_shift, mag2 #inv_dft, mag2
+
+def detecRoberts(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+    a = roberts(V)
+    a = (a*255).astype(int)
+    nova_imagem[:, :, 0] = a
+    nova_imagem[:, :, 1] = a
+    nova_imagem[:, :, 2] = a
+    nova_imagem[:, :, 3] = 255
+    return nova_imagem
+
+def detecSobel(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+    a = sobel(V)
+    a = (a*255).astype(int)
+    nova_imagem[:, :, 0] = a
+    nova_imagem[:, :, 1] = a
+    nova_imagem[:, :, 2] = a
+    nova_imagem[:, :, 3] = 255
+    return nova_imagem
+
+def detecScharr(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+    a = scharr(V)
+    a = (a*255).astype(int)
+    nova_imagem[:, :, 0] = a
+    nova_imagem[:, :, 1] = a
+    nova_imagem[:, :, 2] = a
+    nova_imagem[:, :, 3] = 255
+    return nova_imagem
+
+def detecPrewitt(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+    a = prewitt(V)
+    a = (a*255).astype(int)
+    nova_imagem[:, :, 0] = a
+    nova_imagem[:, :, 1] = a
+    nova_imagem[:, :, 2] = a
+    nova_imagem[:, :, 3] = 255
+    return nova_imagem
+
+def detecFarid(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+    a = farid(V)
+    a = (a*255).astype(int)
+    nova_imagem[:, :, 0] = a
+    nova_imagem[:, :, 1] = a
+    nova_imagem[:, :, 2] = a
+    nova_imagem[:, :, 3] = 255
+    return nova_imagem
