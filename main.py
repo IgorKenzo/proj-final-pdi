@@ -31,6 +31,7 @@ class Application(tk.Frame):
         self.createEffectsMenu()
         self.createDefectMenu()
         self.createImageMenu()
+        self.createTransformMenu()
 
         self.master.config(menu = self.menubar)
 
@@ -77,6 +78,37 @@ class Application(tk.Frame):
         menu.add_command(label ='Histograma...', command = self.draw_3hist)
         menu.add_command(label ='Espelhar Horizontalmente', command = self.call_flip_hor)
         menu.add_command(label ='Espelhar Verticalmente', command = self.call_flip_ver)
+        menu.add_command(label="Quantizar", command=self.quantizarImg)
+
+    def createTransformMenu(self):
+        menu = tk.Menu(self.menubar, tearoff = 0)
+        self.menubar.add_cascade(label ='Fourier', menu = menu)
+        menuTransformada = tk.Menu(menu, tearoff = 0)
+        menu.add_cascade(label ="Transformadas", menu = menuTransformada)
+
+        menuTransformada.add_command(label="Fourier Passa alta", command = lambda: self.aplicaFFT("alta"))
+        menuTransformada.add_command(label="Fourier Passa baixa", command = lambda: self.aplicaFFT("baixa"))
+
+    def aplicaFFT(self, tipo):
+        im = np.array(ImageTk.getimage(self.img))
+        im = im[:,:,0]
+        ft, mascara, dft = fourrierTransform(im, tipo)
+        # print(mascara)
+        fig, (ax1,ax2,ax3) = plt.subplots(1, 3)
+        ax1.imshow(ft, cmap="gray")
+        ax1.set_title('Transformada de Fourier')
+        ax2.imshow(mascara[:,:,1], cmap="gray")
+        ax2.set_title('Mascara passa ' + tipo)
+        ax3.imshow(dft, cmap="gray")
+        ax3.set_title('Img')
+        plt.show()
+
+    def quantizarImg(self):
+        im = np.array(ImageTk.getimage(self.img))
+        imq = encode_quant(im, 3)
+        im = decode_quant(imq,3)
+        self.img = im
+        self.desenhar_imagemRGB(self.img)
 
     def desenhar_imagemRGB(self, imagem):
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
@@ -274,7 +306,7 @@ class Application(tk.Frame):
 
 root = tk.Tk()
 app = Application(master=root)
-app.master.title("My Do-Nothing Application")
+app.master.title("Tophoshop")
 app.master.minsize(1200, 900)
 app.master.maxsize(1200, 900)
 app.mainloop()
