@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 from skimage import img_as_float, restoration, filters, util, exposure, morphology
 from scipy.ndimage import rotate
 import numpy as np
+from skimage.util import dtype
 from skimage.util.dtype import img_as_uint
 from skimage.filters import roberts, sobel, scharr, prewitt, farid, unsharp_mask
+from skimage.feature import canny
 import cv2 as cv
 
 def simple_blur(imagem, tamanho_kernel):
@@ -268,6 +270,14 @@ def segBin_yen(imagem):
 
     return img
 
+def segBin_custom(imagem, limiar):
+    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img[:, :, 1] = img[:, :, 0]
+    img[:, :, 2] = img[:, :, 0]
+    img[:, :, 3] = 255
+
+    return img
+
 def fourrierTransform(img, tipo):
     # dft = np.fft.fft2(img)
     # shift_dft = np.fft.fftshift(dft)
@@ -365,4 +375,78 @@ def detecFarid(imagem):
     nova_imagem[:, :, 1] = a
     nova_imagem[:, :, 2] = a
     nova_imagem[:, :, 3] = 255
+    return nova_imagem
+
+def detecCanny(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+    sigma = 0.3
+    mediana = np.median(V)
+    minimo = int(max(0, (1 - sigma) * mediana))
+    maximo = int(min(255, (1 + sigma) * mediana))
+
+    a = canny(V, low_threshold=minimo, high_threshold=maximo)
+    a_inteiro = np.zeros(a.shape, np.uint8)
+
+    for x in range(a.shape[0]):
+        for y in range(a.shape[1]):
+            if (a[x, y]):
+                a_inteiro[x, y] = 255
+            else:
+                a_inteiro[x, y] = 0
+    
+    nova_imagem[:, :, 0] = a_inteiro
+    nova_imagem[:, :, 1] = a_inteiro
+    nova_imagem[:, :, 2] = a_inteiro
+    nova_imagem[:, :, 3] = 255
+    return nova_imagem
+
+def convolucao(imagem, kernel):
+  himagem = imagem.shape[0]
+  wimagem = imagem.shape[1]
+
+  hkernel = kernel.shape[0]
+  wkernel = kernel.shape[1]
+
+  h = hkernel//2
+  w = wkernel//2
+
+  imagemconv = np.zeros(imagem.shape, np.float32)
+
+  for linha in range(himagem):
+    for coluna in range(wimagem):
+      soma = 0
+      for linhak in range(hkernel):
+        for colunak in range(wkernel):
+          if linha+linhak-h >= 0 and linha+linhak-h < himagem and coluna+colunak-w >= 0 and coluna+colunak-w < wimagem:
+            soma += kernel[linhak][colunak] * imagem[linha+linhak-h][coluna+colunak-w]
+      imagemconv[linha][coluna] = soma
+
+  return imagemconv
+
+def detcBordas_kernel(imagem):
+    nova_imagem = np.zeros(imagem.shape)
+    imagem = cv.cvtColor(imagem, cv.COLOR_RGB2HSV)
+    H, S, V = cv.split(imagem)
+
+    identidade = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]], np.float32)
+    borda = np.array([[1, 0, -1], [0, 0, 0], [-1, 0, 1]], np.float32)
+    box_blur = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]], np.float32)
+    box_blur *= 0.1111
+    gaussian_blur = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], np.float32)
+    gaussian_blur *= 0.0625
+
+    a =  convolucao(V, borda)
+
+    for x in range(a.shape[0]):
+        for y in range(a.shape[1]):
+            if (a[x, y] < 0):
+                a[x, y] = 0
+
+    nova_imagem[:, :, 0] = a
+    nova_imagem[:, :, 1] = a
+    nova_imagem[:, :, 2] = a
+    nova_imagem[:, :, 3] = 255
+
     return nova_imagem

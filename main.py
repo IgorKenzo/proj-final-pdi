@@ -67,14 +67,17 @@ class Application(tk.Frame):
         menuSegBinaria.add_command(label ="Otsu", command= self.call_segBin_Otsu)
         menuSegBinaria.add_command(label ="Triangulo", command= self.call_segBin_Triangle)
         menuSegBinaria.add_command(label ="Yen", command= self.call_segBin_Yen)
+        menuSegBinaria.add_command(label ="Customizado...", command= self.call_segBin_Custon)
 
         menuDetecBordas = tk.Menu(menu, tearoff = 0)
         menu.add_cascade(label = "Detecção de Bordas", menu = menuDetecBordas)
+        menuDetecBordas.add_command(label ="Usando Kernel", command= self.call_detecBordas_Kernel)
         menuDetecBordas.add_command(label ="Roberts", command= lambda: self.call_detecBordas(detecRoberts))
         menuDetecBordas.add_command(label ="Sobel", command= lambda: self.call_detecBordas(detecSobel))
         menuDetecBordas.add_command(label ="Scharr", command= lambda: self.call_detecBordas(detecScharr))
         menuDetecBordas.add_command(label ="Prewitt", command= lambda: self.call_detecBordas(detecPrewitt))
         menuDetecBordas.add_command(label ="Farid", command= lambda: self.call_detecBordas(detecFarid))
+        menuDetecBordas.add_command(label ="Canny", command= lambda: self.call_detecBordas(detecCanny))
 
     def createDefectMenu(self):
         menu = tk.Menu(self.menubar, tearoff= 0)
@@ -333,9 +336,22 @@ class Application(tk.Frame):
         nova_imagem = segBin_yen(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
+    def call_segBin_Custon(self):
+        limiar = tk.simpledialog.askinteger("Input", "Insira o limiar", parent=self.master, minvalue=0, maxvalue=255)
+        if limiar == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_custom(array_imagem, limiar)
+        self.desenhar_imagemRGB(nova_imagem)
+
     def call_detecBordas(self, func):
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = func(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_detecBordas_Kernel(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = detcBordas_kernel(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
 root = tk.Tk()
