@@ -11,7 +11,7 @@ from tkinter.simpledialog import askinteger
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from PIL import ImageTk,Image
+from PIL import ImageTk, Image
 from skimage import data, feature, filters
 import numpy as np
 
