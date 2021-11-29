@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from PIL import ImageTk,Image
+from PIL import ImageTk, Image
 from skimage import data, feature, filters
 import numpy as np
 
@@ -79,6 +79,13 @@ class Application(tk.Frame):
         menuDetecBordas.add_command(label ="Farid", command= lambda: self.call_detecBordas(detecFarid))
         menuDetecBordas.add_command(label ="Canny", command= lambda: self.call_detecBordas(detecCanny))
 
+        menuDetection = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Detecção", menu=menuDetection)
+        menuDetection.add_command(label="Linhas", command=self.call_line_detection)
+        menuDetection.add_command(label="Linhas Probabilística", command=self.call_probabilistic_line_detection)
+        menuDetection.add_command(label="Circulos", command=self.call_circle_detection)
+        menuDetection.add_command(label="Componentes", command=self.call_component_detection)
+
     def createDefectMenu(self):
         menu = tk.Menu(self.menubar, tearoff= 0)
         self.menubar.add_cascade(label ='Defeitos', menu = menu)
@@ -130,6 +137,9 @@ class Application(tk.Frame):
     def desenhar_imagemRGB(self, imagem):
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
+    def desenhar_imagem_grayscale(self, imagem):
+        self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'L'))
 
     def desenhar_imagemRGBFloat(self, imagem):
         print(imagem)
@@ -338,6 +348,60 @@ class Application(tk.Frame):
         array_imagem = np.array(ImageTk.getimage(self.img))
         nova_imagem = segBin_yen(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
+
+    def call_line_detection(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        tam = array_imagem.shape
+        maxt = int(max(tam[0], tam[1]))
+
+        ct1 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 1", parent=self.master, minvalue=0)
+        ct2 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 2", parent=self.master, minvalue=0)
+
+        t = tk.simpledialog.askinteger("Input", f"Insira o threshold das linhas [0 - {maxt}]", parent=self.master, minvalue=0, maxvalue=maxt)
+        if not t:
+            tk.messagebox.showinfo("Erro", "Insira um valor de threshold!")
+            return
+
+        self.desenhar_imagemRGB(line_detection(array_imagem, ct1, ct2, t))
+
+    def call_probabilistic_line_detection(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        tam = array_imagem.shape
+        maxt = int(max(tam[0], tam[1]))
+
+        ct1 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 1", parent=self.master, minvalue=0)
+        ct2 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 2", parent=self.master, minvalue=0)
+
+        t = tk.simpledialog.askinteger("Input", "Insira o threshold de votos", parent=self.master, minvalue=0)
+        if t is None:
+            tk.messagebox.showinfo("Erro", "Valor de threshold inválido!")
+            return
+
+        min_line_size = tk.simpledialog.askinteger("Input", f"Insira o tamanho mínimo das linhas [0 - {maxt}]", parent=self.master, minvalue=0, maxvalue=maxt)
+        max_line_gap = tk.simpledialog.askinteger("Input", f"Insira o vão máximo de uma linha [0 - {maxt}]", parent=self.master, minvalue=0, maxvalue=maxt)
+
+        nova_imagem = probabilistic_line_detection(array_imagem, ct1, ct2, t, min_line_size, max_line_gap)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_circle_detection(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        tam = array_imagem.shape
+        minT = int(max(tam[0], tam[1])) // 2
+        minR = tk.simpledialog.askinteger("Input", f"Insira o raio mínimo [0 - {minT}]", parent=self.master, minvalue=0, maxvalue=minT)
+        if minR is None:
+            tk.messagebox.showinfo("Erro", "Valor de raio inválido!")
+            return
+        maxR = tk.simpledialog.askinteger("Input", f"Insira o raio máximo [0 - {minT}]", parent=self.master, minvalue=0, maxvalue=minT)
+        if maxR is None:
+            tk.messagebox.showinfo("Erro", "Valor de raio inválido!")
+            return
+        nova_imagem = circle_detection(array_imagem, minR, maxR)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_component_detection(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+
+        self.desenhar_imagemRGB(component_detection(array_imagem))
 
     def call_segBin_Custon(self):
         limiar = tk.simpledialog.askinteger("Input", "Insira o limiar", parent=self.master, minvalue=0, maxvalue=255)
