@@ -9,6 +9,7 @@ from tkinter import filedialog, image_names
 from tkinter.constants import BOTTOM, LEFT, NW, RIGHT, TOP
 from tkinter.simpledialog import askinteger
 from matplotlib import pyplot as plt
+from matplotlib import cm
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from PIL import ImageTk, Image
@@ -31,6 +32,7 @@ class Application(tk.Frame):
         self.createEffectsMenu()
         self.createDefectMenu()
         self.createImageMenu()
+        self.createTransformMenu()
 
         self.master.config(menu = self.menubar)
 
@@ -38,6 +40,8 @@ class Application(tk.Frame):
         file = tk.Menu(self.menubar, tearoff = 0)
         self.menubar.add_cascade(label ='Arquivo', menu = file)
         file.add_command(label ='Abrir imagem...', command = self.open_image)
+        file.add_command(label ='Abrir câmera', command = self.open_camera)
+        file.add_command(label ='Abrir moedas', command = self.open_coins)
         file.add_command(label ='Salvar como...', command = self.save_image)
         file.add_command(label ='Salvar rápido como JPG', command = self.save_image_jpg)
         file.add_separator()
@@ -63,6 +67,17 @@ class Application(tk.Frame):
         menuSegBinaria.add_command(label ="Otsu", command= self.call_segBin_Otsu)
         menuSegBinaria.add_command(label ="Triangulo", command= self.call_segBin_Triangle)
         menuSegBinaria.add_command(label ="Yen", command= self.call_segBin_Yen)
+        menuSegBinaria.add_command(label ="Customizado...", command= self.call_segBin_Custon)
+
+        menuDetecBordas = tk.Menu(menu, tearoff = 0)
+        menu.add_cascade(label = "Detecção de Bordas", menu = menuDetecBordas)
+        menuDetecBordas.add_command(label ="Usando Kernel", command= self.call_detecBordas_Kernel)
+        menuDetecBordas.add_command(label ="Roberts", command= lambda: self.call_detecBordas(detecRoberts))
+        menuDetecBordas.add_command(label ="Sobel", command= lambda: self.call_detecBordas(detecSobel))
+        menuDetecBordas.add_command(label ="Scharr", command= lambda: self.call_detecBordas(detecScharr))
+        menuDetecBordas.add_command(label ="Prewitt", command= lambda: self.call_detecBordas(detecPrewitt))
+        menuDetecBordas.add_command(label ="Farid", command= lambda: self.call_detecBordas(detecFarid))
+        menuDetecBordas.add_command(label ="Canny", command= lambda: self.call_detecBordas(detecCanny))
 
         menuDetection = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Detecção", menu=menuDetection)
@@ -84,6 +99,40 @@ class Application(tk.Frame):
         menu.add_command(label ='Histograma...', command = self.draw_3hist)
         menu.add_command(label ='Espelhar Horizontalmente', command = self.call_flip_hor)
         menu.add_command(label ='Espelhar Verticalmente', command = self.call_flip_ver)
+        menu.add_command(label="Quantizar", command=self.quantizarImg)
+
+    def createTransformMenu(self):
+        menu = tk.Menu(self.menubar, tearoff = 0)
+        self.menubar.add_cascade(label ='Fourier', menu = menu)
+        menuTransformada = tk.Menu(menu, tearoff = 0)
+        menu.add_cascade(label ="Transformadas", menu = menuTransformada)
+
+        menuTransformada.add_command(label="Fourier Passa alta", command = lambda: self.aplicaFFT("alta"))
+        menuTransformada.add_command(label="Fourier Passa baixa", command = lambda: self.aplicaFFT("baixa"))
+
+    def aplicaFFT(self, tipo):
+        im = np.array(ImageTk.getimage(self.img))
+        im = im[:,:,0]
+        ft, mascara, dft = fourrierTransform(im, tipo)
+        # print(mascara)
+        fig, (ax1,ax2,ax3) = plt.subplots(1, 3)
+        ax1.imshow(ft, cmap="gray")
+        ax1.set_title('Transformada de Fourier')
+        ax2.imshow(mascara[:,:,1], cmap="gray")
+        ax2.set_title('Mascara passa ' + tipo)
+        ax3.imshow(dft, cmap="gray")
+        ax3.set_title('Img')
+        plt.show()
+
+    def quantizarImg(self):
+        qtdQuant = tk.simpledialog.askinteger("Input", "Insira quanto ira quantizar", parent=self.master, minvalue=0)
+        if qtdQuant == None:
+            return
+        im = np.array(ImageTk.getimage(self.img))
+        imq = encode_quant(im, qtdQuant)
+        im = decode_quant(imq,qtdQuant)
+        self.img = im
+        self.desenhar_imagemRGB(self.img)
 
     def desenhar_imagemRGB(self, imagem):
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'RGBA'))
@@ -91,6 +140,13 @@ class Application(tk.Frame):
 
     def desenhar_imagem_grayscale(self, imagem):
         self.img = ImageTk.PhotoImage(image=Image.fromarray(imagem.astype('uint8'), 'L'))
+
+    def desenhar_imagemRGBFloat(self, imagem):
+        print(imagem)
+        formatted = (imagem * 255 / np.max(imagem)).astype('uint8')
+        formatted[:, :, 1] = formatted[:, :, 0]
+        formatted[:, :, 2] = formatted[:, :, 0]
+        self.img = ImageTk.PhotoImage(Image.fromarray(formatted))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
     def create_widgets(self):
@@ -106,6 +162,16 @@ class Application(tk.Frame):
         if self.file == "":
             return
         self.img = ImageTk.PhotoImage(Image.open(self.file))
+        self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
+    def open_camera(self):
+        camera = data.camera()
+        self.img = ImageTk.PhotoImage(image=Image.fromarray(camera))
+        self.canvas.create_image(20, 20, anchor=NW, image=self.img)
+
+    def open_coins(self):
+        moedas = data.coins()
+        self.img = ImageTk.PhotoImage(image=Image.fromarray(moedas))
         self.canvas.create_image(20, 20, anchor=NW, image=self.img)
 
     def save_image_jpg(self):
@@ -235,7 +301,7 @@ class Application(tk.Frame):
 
     def call_unsharp_mask(self):
         array_imagem = np.array(ImageTk.getimage(self.img))
-        nova_imagem = unsharp_mask(array_imagem)
+        nova_imagem = unsharp_mask2(array_imagem)
         self.desenhar_imagemRGB(nova_imagem)
 
     def call_median_filter(self):
@@ -337,9 +403,27 @@ class Application(tk.Frame):
 
         self.desenhar_imagemRGB(component_detection(array_imagem))
 
+    def call_segBin_Custon(self):
+        limiar = tk.simpledialog.askinteger("Input", "Insira o limiar", parent=self.master, minvalue=0, maxvalue=255)
+        if limiar == None:
+            return
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = segBin_custom(array_imagem, limiar)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_detecBordas(self, func):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = func(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
+    def call_detecBordas_Kernel(self):
+        array_imagem = np.array(ImageTk.getimage(self.img))
+        nova_imagem = detcBordas_kernel(array_imagem)
+        self.desenhar_imagemRGB(nova_imagem)
+
 root = tk.Tk()
 app = Application(master=root)
-app.master.title("My Do-Nothing Application")
+app.master.title("Tophoshop")
 app.master.minsize(1200, 900)
 app.master.maxsize(1200, 900)
 app.mainloop()
