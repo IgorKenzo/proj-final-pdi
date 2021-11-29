@@ -118,9 +118,12 @@ class Application(tk.Frame):
         plt.show()
 
     def quantizarImg(self):
+        qtdQuant = tk.simpledialog.askinteger("Input", "Insira quanto ira quantizar", parent=self.master, minvalue=0)
+        if qtdQuant == None:
+            return
         im = np.array(ImageTk.getimage(self.img))
-        imq = encode_quant(im, 3)
-        im = decode_quant(imq,3)
+        imq = encode_quant(im, qtdQuant)
+        im = decode_quant(imq,qtdQuant)
         self.img = im
         self.desenhar_imagemRGB(self.img)
 
