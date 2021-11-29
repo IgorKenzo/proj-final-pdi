@@ -5,14 +5,10 @@ from scipy.ndimage import rotate
 import numpy as np
 from skimage.util import dtype
 from skimage.util.dtype import img_as_uint
-<<<<<<< HEAD
-import cv2.cv2 as cv
-from random import choice, choices
-=======
 from skimage.filters import roberts, sobel, scharr, prewitt, farid, unsharp_mask
 from skimage.feature import canny
 import cv2 as cv
->>>>>>> main
+from random import choice, choices
 
 def simple_blur(imagem, tamanho_kernel):
     imagemBlur = np.zeros(imagem.shape, dtype=np.uint8)
@@ -153,10 +149,8 @@ def unsharp_mask1(imagem):
     # print(subtraida)
 
     final = imagem + (2 * subtraida)
-<<<<<<< HEAD
 
     nova_imagem[:, :, :3] = final*255
-=======
     # print(final)
     
     return final
@@ -176,7 +170,6 @@ def unsharp_mask2(imagem):
     nova_imagem[:, :, 1] = im*255
     nova_imagem[:, :, 2] = im*255
     nova_imagem[:, :, 3] = 255
->>>>>>> main
 
     print(nova_imagem)
     return nova_imagem
@@ -279,8 +272,6 @@ def segBin_yen(imagem):
     img[:, :, 3] = 255
 
     return img
-
-<<<<<<< HEAD
 
 def line_detection(img, ct1, ct2, t):
     border = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
@@ -401,7 +392,7 @@ def level_reduction(img, lvl):
             # Lembrar de castar para inteiro para evitar um erro no qual a imagem simplesmente ignora as contas
             new_img[i][j] = int(img[i][j] / (2 ** lvl))
     return new_img
-=======
+
 def segBin_custom(imagem, limiar):
     img = segmentacao_Binaria(imagem, limiar= limiar)
     img[:, :, 1] = img[:, :, 0]
@@ -582,4 +573,3 @@ def detcBordas_kernel(imagem):
     nova_imagem[:, :, 3] = 255
 
     return nova_imagem
->>>>>>> main
