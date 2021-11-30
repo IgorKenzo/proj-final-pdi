@@ -391,17 +391,18 @@ class Application(tk.Frame):
             tk.messagebox.showinfo("Erro", "Valor de raio inválido!")
             return
         nova_imagem = circle_detection(array_imagem, minR, maxR)
+        if nova_imagem is None:
+            tk.messagebox.showinfo("Erro", "Nenhum círculo encontrado!")
+            return
         self.desenhar_imagemRGB(nova_imagem)
 
     def call_component_detection(self, extraction):
         array_imagem = np.array(ImageTk.getimage(self.img))
 
-        fig, ax = plt.subplots()
-
         if extraction:
-            fig, ax = prepare_component(array_imagem, extraction)
+            prepare_component(array_imagem, extract_properties=extraction)
         else:
-            ax.imshow(prepare_component(array_imagem, extraction), cmap="nipy_spectral")
+            prepare_component(array_imagem, extract_properties=extraction)
         plt.show()
 
     def call_segBin_Custon(self):

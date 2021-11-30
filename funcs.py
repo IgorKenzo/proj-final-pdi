@@ -339,7 +339,9 @@ def circle_detection(img, min_radius, max_radius):
                                param2=100,
                                minRadius=min_radius,
                                maxRadius=max_radius)
-    if circulos is None: return img
+    if circulos is None:
+        print("Nenhum círculo encontrado!")
+        return None
     circulos = circulos.astype(int)
 
     for circulo in circulos[0]:
@@ -378,7 +380,9 @@ def component_detection(img):
 
     return result
 
-def property_extraction(labels, img):
+def property_extraction(img, labels):
+    if type(labels[0][0]) is not int:
+        labels = np.vectorize(lambda x: int(x))(labels)
     propriedades = regionprops(labels)
 
     fig, ax = plt.subplots()
@@ -392,15 +396,15 @@ def property_extraction(labels, img):
         boxx = (ys, yi, yi, ys, ys)
         boxy = (xs, xs, xi, xi, xs)
         ax.plot(boxx, boxy, '-r', linewidth=1.5)
+    plt.show()
 
     # tabela = regionprops_table(labels, properties=('centroid', 'orientation', 'bbox', 'area', 'perimeter'))
     # display(pd.DataFrame(tabela))
-    return fig
 
-def prepare_component(img, min_size=120, extract_properties=False):
-    original = img
+def prepare_component(img, min_size=115, extract_properties=False):
     if len(img.shape) > 2:
         img = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
+    original = img
 
     img = canny(img/255.0)
 
@@ -408,12 +412,12 @@ def prepare_component(img, min_size=120, extract_properties=False):
     img = morphology.remove_small_objects(img, min_size)
 
     if extract_properties:
-        return property_extraction(original, component_detection(img))
+        property_extraction(original, component_detection(img))
     else:
-        return component_detection(img)
+        plt.imshow(component_detection(img), cmap="nipy_spectral")
 
 def segBin_custom(imagem, limiar):
-    img = segmentacao_Binaria(imagem, limiar= limiar)
+    img = segmentacao_Binaria(imagem, limiar=limiar)
     img[:, :, 1] = img[:, :, 0]
     img[:, :, 2] = img[:, :, 0]
     img[:, :, 3] = 255
