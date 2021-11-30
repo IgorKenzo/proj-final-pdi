@@ -7,7 +7,9 @@ from skimage.util import dtype
 from skimage.util.dtype import img_as_uint
 from skimage.filters import roberts, sobel, scharr, prewitt, farid, unsharp_mask
 from skimage.feature import canny
+from skimage.measure import regionprops, regionprops_table
 import cv2 as cv
+from scipy.ndimage import binary_fill_holes
 from random import choice, choices
 
 def simple_blur(imagem, tamanho_kernel):
@@ -273,11 +275,16 @@ def segBin_yen(imagem):
 
     return img
 
-def line_detection(img, ct1, ct2, t):
+def line_detection(img, t, sigma=0.3):
+    v_component = cv.cvtColor(img[:, :, :3], cv.COLOR_RGB2HSV)[2]
+
+    median = np.median(v_component)
+    minimo = int(max(0, (1 - sigma) * median))
+    maximo = int(min(255, (1 + sigma) * median))
+
     border = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
-    if not ct1: ct1 = 50
-    if not ct2: ct2 = 200
-    border = cv.Canny(border, ct1, ct2, None, 3)
+
+    border = cv.Canny(border, minimo, maximo, None, 3)
 
     linhas = cv.HoughLines(border, 1, np.pi / 180, t)
 
@@ -297,11 +304,14 @@ def line_detection(img, ct1, ct2, t):
     return result
 
 
-def probabilistic_line_detection(img, ct1, ct2, t, min_line_size, max_line_gap):
-    border = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
-    if not ct1: ct1 = 50
-    if not ct2: ct2 = 200
-    border = cv.Canny(border, ct1, ct2, None, 3)
+def probabilistic_line_detection(img, t, min_line_size, max_line_gap, sigma=0.3):
+    v_component = cv.cvtColor(img[:, :, :3], cv.COLOR_RGB2HSV)[2]
+
+    median = np.median(v_component)
+    minimo = int(max(0, (1 - sigma) * median))
+    maximo = int(min(255, (1 + sigma) * median))
+
+    border = cv.Canny(img, minimo, maximo, None, 3)
 
     linhas = cv.HoughLinesP(border, 1, np.pi / 180, t, None, min_line_size, max_line_gap)
 
@@ -340,32 +350,17 @@ def circle_detection(img, min_radius, max_radius):
 
     return result
 
-
-def get_new_color(colors=[]):
-    while True:
-        color = choices(range(256), k=3)
-        if color not in colors: break
-    return color
-
-
 def component_detection(img):
-    current_label = 1
-    colors = [[255, 255, 255]]
-    colors.append(get_new_color([255, 255, 255]))
-    queue = []
-
     result = np.zeros(img.shape)
-    img = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
-    img = level_reduction(img, 7)
     h, w = img.shape
-    components = np.zeros(img.shape)
+    current_label = 1
+    queue = []
 
     # Passo 2
     for i in range(h):
         for j in range(w):
-            if img[i][j] and not components[i][j]:
-                components[i][j] = current_label
-                result[i][j] = colors[current_label] + [255]
+            if img[i][j] and not result[i][j]:
+                result[i][j] = current_label
                 queue.append((i, j))
             else:
                 continue
@@ -375,23 +370,47 @@ def component_detection(img):
                 y, x = queue.pop(0)
                 for ni in range(max(0, y - 1), min(h - 1, y + 1) + 1):
                     for nj in range(max(0, x - 1), min(w - 1, x + 1) + 1):
-                        if img[ni][nj] and not components[ni][nj]:
-                            components[ni][nj] = current_label
-                            result[ni][nj] = colors[current_label] + [255]
+                        if img[ni][nj] and not result[ni][nj]:
+                            result[ni][nj] = current_label
                             queue.append((ni, nj))
             # Passo 4
             current_label += 1
-            colors.append(get_new_color(colors))
+
     return result
 
+def property_extraction(labels, img):
+    propriedades = regionprops(labels)
 
-def level_reduction(img, lvl):
-    new_img = np.zeros(img.shape)
-    for i in range(img.shape[0]):
-        for j in range(img.shape[1]):
-            # Lembrar de castar para inteiro para evitar um erro no qual a imagem simplesmente ignora as contas
-            new_img[i][j] = int(img[i][j] / (2 ** lvl))
-    return new_img
+    fig, ax = plt.subplots()
+    ax.imshow(img, cmap="gray")
+
+    for prop in propriedades:
+        y0, x0 = prop.centroid
+        ax.plot(x0, y0, '.b', markersize=10)
+
+        xs, ys, xi, yi = prop.bbox
+        boxx = (ys, yi, yi, ys, ys)
+        boxy = (xs, xs, xi, xi, xs)
+        ax.plot(boxx, boxy, '-r', linewidth=1.5)
+
+    # tabela = regionprops_table(labels, properties=('centroid', 'orientation', 'bbox', 'area', 'perimeter'))
+    # display(pd.DataFrame(tabela))
+    return fig
+
+def prepare_component(img, min_size=120, extract_properties=False):
+    original = img
+    if len(img.shape) > 2:
+        img = cv.cvtColor(img, cv.COLOR_RGBA2GRAY)
+
+    img = canny(img/255.0)
+
+    img = binary_fill_holes(img)
+    img = morphology.remove_small_objects(img, min_size)
+
+    if extract_properties:
+        return property_extraction(original, component_detection(img))
+    else:
+        return component_detection(img)
 
 def segBin_custom(imagem, limiar):
     img = segmentacao_Binaria(imagem, limiar= limiar)

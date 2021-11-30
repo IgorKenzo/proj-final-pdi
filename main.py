@@ -84,7 +84,8 @@ class Application(tk.Frame):
         menuDetection.add_command(label="Linhas", command=self.call_line_detection)
         menuDetection.add_command(label="Linhas Probabilística", command=self.call_probabilistic_line_detection)
         menuDetection.add_command(label="Circulos", command=self.call_circle_detection)
-        menuDetection.add_command(label="Componentes", command=self.call_component_detection)
+        menuDetection.add_command(label="Componentes", command=lambda: self.call_component_detection(False))
+        menuDetection.add_command(label="Propriedades", command=lambda: self.call_component_detection(True))
 
     def createDefectMenu(self):
         menu = tk.Menu(self.menubar, tearoff= 0)
@@ -354,23 +355,17 @@ class Application(tk.Frame):
         tam = array_imagem.shape
         maxt = int(max(tam[0], tam[1]))
 
-        ct1 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 1", parent=self.master, minvalue=0)
-        ct2 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 2", parent=self.master, minvalue=0)
-
         t = tk.simpledialog.askinteger("Input", f"Insira o threshold das linhas [0 - {maxt}]", parent=self.master, minvalue=0, maxvalue=maxt)
         if not t:
             tk.messagebox.showinfo("Erro", "Insira um valor de threshold!")
             return
 
-        self.desenhar_imagemRGB(line_detection(array_imagem, ct1, ct2, t))
+        self.desenhar_imagemRGB(line_detection(array_imagem, t))
 
     def call_probabilistic_line_detection(self):
         array_imagem = np.array(ImageTk.getimage(self.img))
         tam = array_imagem.shape
         maxt = int(max(tam[0], tam[1]))
-
-        ct1 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 1", parent=self.master, minvalue=0)
-        ct2 = tk.simpledialog.askinteger("Input", "Insira o threshold de canny 2", parent=self.master, minvalue=0)
 
         t = tk.simpledialog.askinteger("Input", "Insira o threshold de votos", parent=self.master, minvalue=0)
         if t is None:
@@ -380,7 +375,7 @@ class Application(tk.Frame):
         min_line_size = tk.simpledialog.askinteger("Input", f"Insira o tamanho mínimo das linhas [0 - {maxt}]", parent=self.master, minvalue=0, maxvalue=maxt)
         max_line_gap = tk.simpledialog.askinteger("Input", f"Insira o vão máximo de uma linha [0 - {maxt}]", parent=self.master, minvalue=0, maxvalue=maxt)
 
-        nova_imagem = probabilistic_line_detection(array_imagem, ct1, ct2, t, min_line_size, max_line_gap)
+        nova_imagem = probabilistic_line_detection(array_imagem, t, min_line_size, max_line_gap)
         self.desenhar_imagemRGB(nova_imagem)
 
     def call_circle_detection(self):
@@ -398,10 +393,16 @@ class Application(tk.Frame):
         nova_imagem = circle_detection(array_imagem, minR, maxR)
         self.desenhar_imagemRGB(nova_imagem)
 
-    def call_component_detection(self):
+    def call_component_detection(self, extraction):
         array_imagem = np.array(ImageTk.getimage(self.img))
 
-        self.desenhar_imagemRGB(component_detection(array_imagem))
+        fig, ax = plt.subplots()
+
+        if extraction:
+            fig, ax = prepare_component(array_imagem, extraction)
+        else:
+            ax.imshow(prepare_component(array_imagem, extraction), cmap="nipy_spectral")
+        plt.show()
 
     def call_segBin_Custon(self):
         limiar = tk.simpledialog.askinteger("Input", "Insira o limiar", parent=self.master, minvalue=0, maxvalue=255)
