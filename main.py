@@ -199,7 +199,7 @@ class Application(tk.Frame):
                 decz = decode_zip(encz, encq.shape)
                 decq = decode_quant(encq, quant)
                 dec = decode_dct(decq, bx, by)
-                cv2.imwrite("IMG.png", dec.astype(np.uint8))                
+                cv2.imwrite("IMG.jpg", dec.astype(np.uint8))
         
     def save_image(self):
         imgpil = ImageTk.getimage(self.img)
